@@ -1,9 +1,9 @@
+#define PINO_CLOCK 3
 #define PINO_DADOS 4
-#define PINO_CLOCK 5
+#define PINO_CTS 5
 #define PINO_RTS 6
-#define PINO_CTS 7
 
-#define BAUD_RATE 1
+#define BAUD_RATE 25
 
 #include "Temporizador.h"
 
@@ -12,7 +12,7 @@ bool paridade;
 bool enviando = false;
 int bitIndex = 0;
 byte frame[9]; // 8 bits + 1 bit de paridade
-bool clock = LOW;
+bool clock = HIGH;
 
 // Calcula bit de paridade - Par
 bool bitParidade(char d){
@@ -20,7 +20,7 @@ bool bitParidade(char d){
   for (int i = 0; i < 8; i++) {
     if (d & (1<<i)) ct++;
   }
-  return (ct % 2 == 0); // Par
+  return (ct % 2 == 1); // Virar par
 }
 
 // Rotina de interrupcao do timer1
@@ -37,8 +37,8 @@ ISR(TIMER1_COMPA_vect){
     // O receptor não pode ler aqui
     if (bitIndex < 9) {
       // Mandar o bit
-      Serial.print("Mandando o bit: ");
-      Serial.println(frame[bitIndex]);
+      // Serial.print("Mandando o bit: ");
+      // Serial.println(frame[bitIndex]);
 
       digitalWrite(PINO_DADOS, frame[bitIndex]);
       bitIndex++;
@@ -83,7 +83,7 @@ void loop () {
   if (!enviando && Serial.available()) {
     // Tem dados. Então calcular bitparidade
     dado = Serial.read();
-    if (dado < 33 && dado > 126) return;
+    if (dado < 32 || dado > 126) return;
 
     // Coloca no frame a mensagem a ser enviada
     for (int i = 0; i < 8; i++)
@@ -95,16 +95,19 @@ void loop () {
     for (int i = 0; i < 8; i++) {
       resultado |= (frame[i] & 0x01) << i;
     }
+    Serial.print("Dado a mandar: ");
     Serial.println(resultado);
 
     // Começa o handshake
     // Emissor seta RTS para HIGH, e espera que o receptor sete o CTS  
     digitalWrite(PINO_RTS, HIGH);
     while(digitalRead(PINO_CTS) == LOW) {}
+    Serial.println("CTS recebido. Começando transmissão...");
 
     // Inicia a transmissão com o clock
     bitIndex = 0;
     enviando = true;
+    clock = HIGH;
     iniciaTemporizador();
   }
 }

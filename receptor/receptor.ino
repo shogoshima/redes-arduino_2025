@@ -1,7 +1,7 @@
+#define PINO_CLOCK 3
 #define PINO_DADOS 4
-#define PINO_CLOCK 5
+#define PINO_CTS 5
 #define PINO_RTS 6
-#define PINO_CTS 7
 
 bool recebendo = false;
 byte frame[9];
@@ -47,6 +47,7 @@ void setup(){
 
 // O loop() eh executado continuamente (como um while(true))
 void loop ( ) {
+  // Serial.println(digitalRead(PINO_CLOCK));
   if (!recebendo && digitalRead(PINO_RTS) == HIGH) {
     // Setar as variáveis iniciais
     recebendo = true;
